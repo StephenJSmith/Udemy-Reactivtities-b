@@ -1,5 +1,9 @@
+using API.Middleware;
 using Application;
 using Application.Activities.Queries;
+using Application.Activities.Validators;
+using Application.Core;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Persistence;
 
@@ -10,16 +14,22 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddDbContext<AppDbContext>(opt =>
 {
-    opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
+  opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 builder.Services.AddCors();
-builder.Services.AddMediatR(x => 
-    x.RegisterServicesFromAssemblyContaining<GetActivityList.Handler>());
+builder.Services.AddMediatR(x =>
+    {
+      x.RegisterServicesFromAssemblyContaining<GetActivityList.Handler>();
+      x.AddOpenBehavior(typeof(ValidationBehavior<,>));
+    });
 builder.Services.AddAutoMapper(typeof(MappingProfiles).Assembly);
+builder.Services.AddValidatorsFromAssemblyContaining<CreateActivityValidator>();
+builder.Services.AddTransient<ExceptionMiddleware>();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseMiddleware<ExceptionMiddleware>();
 app.UseCors(x => x
     .AllowAnyHeader()
     .AllowAnyMethod()
@@ -31,14 +41,14 @@ var services = scope.ServiceProvider;
 
 try
 {
-    var context = services.GetRequiredService<AppDbContext>();
-    await context.Database.MigrateAsync();
-    await DbInitializer.SeedData(context);
+  var context = services.GetRequiredService<AppDbContext>();
+  await context.Database.MigrateAsync();
+  await DbInitializer.SeedData(context);
 }
 catch (System.Exception ex)
 {
-    var logger = services.GetRequiredService<ILogger<Program>>();
-    logger.LogError(ex, "An error occurred during migration");
+  var logger = services.GetRequiredService<ILogger<Program>>();
+  logger.LogError(ex, "An error occurred during migration");
 }
 
 app.Run();
