@@ -40,16 +40,15 @@ export const useActivities = (id?: string) => {
 
   const createActivity = useMutation({
     mutationFn: async (activity: Activity) => {
-      const response = await agent.post<Activity>(`/activities`, activity);
-
-      return response.data;
+        const response = await agent.post('/activities', activity);
+        return response.data;
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ["activities"],
-      });
+        await queryClient.invalidateQueries({
+            queryKey: ['activities']
+        })
     }
-  });
+});
 
   const deleteActivity = useMutation({
     mutationFn: async (id: string) => {
