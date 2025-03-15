@@ -1,11 +1,12 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import agent from '../api/agent';
 import { useMemo } from 'react';
+import { EditProfileSchema } from '../schemas/editProfileSchema';
 
 export const useProfile = (id?: string) => {
   const queryClient = useQueryClient();
-  
-  const {data: profile, isLoading: loadingProfile} = useQuery<Profile>({
+
+  const { data: profile, isLoading: loadingProfile } = useQuery<Profile>({
     queryKey: ['profile', id],
     queryFn: async () => {
       const response = await agent.get<Profile>(`/profiles/${id}`);
@@ -15,7 +16,7 @@ export const useProfile = (id?: string) => {
     enabled: !!id,
   });
 
-  const {data: photos, isLoading: loadingPhotos} = useQuery<Photo[]>({
+  const { data: photos, isLoading: loadingPhotos } = useQuery<Photo[]>({
     queryKey: ['photos', id],
     queryFn: async () => {
       const response = await agent.get<Photo[]>(`/profiles/${id}/photos`);
@@ -29,9 +30,13 @@ export const useProfile = (id?: string) => {
     mutationFn: async (file: Blob) => {
       const formData = new FormData();
       formData.append('file', file);
-      const response = await agent.post<Photo>('/profiles/add-photo', formData, {
-        headers: {'Content-Type': 'multipart/form-data'}, 
-      });
+      const response = await agent.post<Photo>(
+        '/profiles/add-photo',
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        }
+      );
 
       return response.data;
     },
@@ -45,7 +50,7 @@ export const useProfile = (id?: string) => {
         return {
           ...data,
           imageUrl: data.imageUrl ?? photo.url,
-        }
+        };
       });
       queryClient.setQueryData(['profile', id], (data: Profile) => {
         if (!data) return data;
@@ -53,9 +58,9 @@ export const useProfile = (id?: string) => {
         return {
           ...data,
           imageUrl: data.imageUrl ?? photo.url,
-        }
+        };
       });
-    }
+    },
   });
 
   const setMainPhoto = useMutation({
@@ -69,7 +74,7 @@ export const useProfile = (id?: string) => {
         return {
           ...userData,
           imageUrl: photo.url,
-        }
+        };
       });
       queryClient.setQueryData(['profile', id], (profile: Profile) => {
         if (!profile) return profile;
@@ -77,7 +82,7 @@ export const useProfile = (id?: string) => {
         return {
           ...profile,
           imageUrl: photo.url,
-        }
+        };
       });
     },
   });
@@ -88,14 +93,37 @@ export const useProfile = (id?: string) => {
     },
     onSuccess: (_, photoId) => {
       queryClient.setQueryData(['photos', id], (photos: Photo[]) => {
-        return photos?.filter(x => x.id !== photoId);
+        return photos?.filter((x) => x.id !== photoId);
       });
-    }
+    },
   });
 
   const isCurrentUser = useMemo(() => {
     return id === queryClient.getQueryData<User>(['user'])?.id;
   }, [id, queryClient]);
+
+  const updateProfile = useMutation({
+    mutationFn: async (profile: EditProfileSchema) => {
+      await agent.put(`/profiles/`, profile);
+    },
+    onSuccess: (_, profile) => {
+      queryClient.setQueryData(['profile', id], (data: Profile) => {
+        if (!data) return data;
+        return {
+          ...data,
+          displayName: profile.displayName,
+          bio: profile.bio,
+        };
+      });
+      queryClient.setQueryData(['user'], (userData: User) => {
+        if (!userData) return userData;
+        return {
+          ...userData,
+          displayName: profile.displayName,
+        };
+      });
+    },
+  });
 
   return {
     profile,
@@ -106,5 +134,6 @@ export const useProfile = (id?: string) => {
     uploadPhoto,
     setMainPhoto,
     deletePhoto,
+    updateProfile,
   };
-}
+};
