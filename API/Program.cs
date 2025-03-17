@@ -1,6 +1,5 @@
 using API.Middleware;
 using API.SignalR;
-using Application;
 using Application.Activities.Queries;
 using Application.Activities.Validators;
 using Application.Core;

@@ -15,8 +15,6 @@ type Props = {
 };
 
 const ProfileCard = ({ profile }: Props) => {
-  const following = false;
-
   return (
     <Link to={`/profiles/${profile.id}`} style={{ textDecoration: 'none' }}>
       <Card
@@ -50,7 +48,7 @@ const ProfileCard = ({ profile }: Props) => {
               </Typography>
             )}
 
-            {following && (
+            {profile.following && (
               <Chip
                 size='small'
                 label='Following'
@@ -69,7 +67,7 @@ const ProfileCard = ({ profile }: Props) => {
           }}
         >
           <Person />
-          <Typography sx={{ ml: 1 }}>20 Followers</Typography>
+          <Typography sx={{ ml: 1 }}>{profile.followersCount} Followers</Typography>
         </Box>
       </Card>
     </Link>
